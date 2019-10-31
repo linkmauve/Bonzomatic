@@ -60,11 +60,15 @@ int main(int argc, const char *argv[])
   }
   else
   {
-    char configPath[ 256 ] = { 0 };
-    if ( getcwd( configPath, 255 ) )
-    {
-      printf( "Looking for config.json in '%s'...\n", configPath );
+    char *configPath;
+    const char *xdg_config_home = getenv("XDG_CONFIG_HOME");
+    if (!xdg_config_home || xdg_config_home[0] != '/') {
+      char *home = getenv("HOME");
+      asprintf(&configPath, "%s/.config/bonzomatic", home);
+    } else {
+      asprintf(&configPath, "%s/bonzomatic", xdg_config_home);
     }
+    printf("Looking for config.json in '%s'...\n", configPath);
   }
 
   jsonxx::Object options;
