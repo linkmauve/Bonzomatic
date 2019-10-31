@@ -68,43 +68,22 @@ if (APPLE)
   set(CMAKE_XCODE_ATTRIBUTE_GCC_ENABLE_CPP_RTTI "No")
 endif ()
 
+find_package(PkgConfig)
+
 # Dont compile glfw and glew for windows dx targets
 if (APPLE OR UNIX OR (WIN32 AND (${BONZOMATIC_WINDOWS_FLAVOR} MATCHES "GLFW")))
   ##############################################################################
   # GLFW
   # GLFW settings and project inclusion
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-  set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-  set(GLFW_VULKAN_STATIC OFF CACHE BOOL "" FORCE)
-  mark_as_advanced(BUILD_SHARED_LIBS GLFW_BUILD_EXAMPLES GLFW_BUILD_TESTS GLFW_BUILD_DOCS GLFW_INSTALL GLFW_VULKAN_STATIC)
-  if (UNIX)
-    set(GLFW_USE_OSMESA OFF CACHE BOOL "" FORCE)
-    mark_as_advanced(GLFW_USE_OSMESA)
-  endif()
-  if (WIN32)
-    set(USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE BOOL "" FORCE)
-    mark_as_advanced(USE_MSVC_RUNTIME_LIBRARY_DLL)
-  endif()
-  add_subdirectory(${CMAKE_SOURCE_DIR}/external/glfw/)
-  set(BZC_PROJECT_INCLUDES ${BZC_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/glfw/include)
-  set(BZC_PROJECT_LIBS ${BZC_PROJECT_LIBS} glfw ${GLFW_LIBRARIES})
+  pkg_check_modules(GLFW glfw3 REQUIRED)
+  set(BZC_PROJECT_INCLUDES ${BZC_PROJECT_INCLUDES} ${GLFW_INCLUDES})
+  set(BZC_PROJECT_LIBS ${BZC_PROJECT_LIBS} ${GLFW_LIBRARIES} -lglfw)
 
   ##############################################################################
   # GLEW
-  set(GLEW_SRCS
-  ${CMAKE_SOURCE_DIR}/external/glew/glew.c
-  )
-  add_library(bzc_glew STATIC ${GLEW_SRCS})
-  target_include_directories(bzc_glew PUBLIC ${CMAKE_SOURCE_DIR}/external/glew)
-  target_compile_definitions(bzc_glew PUBLIC -DGLEW_STATIC)
-  if (MSVC)
-    target_compile_options(bzc_glew PUBLIC "$<$<CONFIG:Release>:/MT>")
-  endif ()
-  set(BZC_PROJECT_INCLUDES ${BZC_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/glew)
-  set(BZC_PROJECT_LIBS ${BZC_PROJECT_LIBS} bzc_glew)
+  pkg_check_modules(GLEW glew REQUIRED)
+  set(BZC_PROJECT_INCLUDES ${BZC_PROJECT_INCLUDES} ${GLEW_INCLUDES})
+  set(BZC_PROJECT_LIBS ${BZC_PROJECT_LIBS} ${GLEW_LIBRARIES} -lepoxy)
 else ()
   # for windows, use DirectX
   set(BZC_PROJECT_INCLUDES ${BZC_PROJECT_INCLUDES} $ENV{DXSDK_DIR}/Include)
@@ -133,7 +112,7 @@ if (MSVC)
 endif ()
 set(BZC_PROJECT_INCLUDES ${BZC_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/kiss_fft)
 set(BZC_PROJECT_INCLUDES ${BZC_PROJECT_INCLUDES} ${CMAKE_SOURCE_DIR}/external/kiss_fft/tools)
-set(BZC_PROJECT_LIBS ${BZC_PROJECT_LIBS} bzc_kissfft)
+set(BZC_PROJECT_LIBS ${BZC_PROJECT_LIBS} bzc_kissfft -ldl -pthread)
 
 ##############################################################################
 # JSONXX
