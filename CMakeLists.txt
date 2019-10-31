@@ -69,6 +69,9 @@ if (APPLE)
 endif ()
 
 find_package(PkgConfig)
+pkg_check_modules(GLOOX gloox REQUIRED)
+set(BZC_PROJECT_INCLUDES ${BZC_PROJECT_INCLUDES} ${GLOOX_INCLUDES})
+set(BZC_PROJECT_LIBS ${BZC_PROJECT_LIBS} ${GLOOX_LIBRARIES})
 
 # Dont compile glfw and glew for windows dx targets
 if (APPLE OR UNIX OR (WIN32 AND (${BONZOMATIC_WINDOWS_FLAVOR} MATCHES "GLFW")))
