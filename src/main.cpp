@@ -13,6 +13,7 @@
 #include "Renderer.h"
 #include "FFT.h"
 #include "MIDI.h"
+#include "XMPP.h"
 #include "Timer.h"
 #include "Misc.h"
 #include "UniConversion.h"
@@ -68,6 +69,9 @@ int main(int argc, const char *argv[])
     } else {
       asprintf(&configPath, "%s/bonzomatic", xdg_config_home);
     }
+    char * file;
+    asprintf(&file, "%s/%s", configPath, configFile);
+    configFile = file;
     printf("Looking for config.json in '%s'...\n", configPath);
   }
 
@@ -124,6 +128,37 @@ int main(int argc, const char *argv[])
   {
     printf("MIDI::Open() failed, continuing anyway...\n");
     //return -1;
+  }
+
+  if (options.has<jsonxx::Object>("xmpp"))
+  {
+    auto xmpp = options.get<jsonxx::Object>("xmpp");
+    if (xmpp.has<jsonxx::String>("jid") &&
+        xmpp.has<jsonxx::String>("password") &&
+        xmpp.has<jsonxx::String>("recipient"))
+    {
+      XMPP::Settings settings;
+      settings.jid = xmpp.get<jsonxx::String>("jid");
+      settings.password = xmpp.get<jsonxx::String>("password");
+      settings.recipient = xmpp.get<jsonxx::String>("recipient");
+
+      settings.host = false;
+      if (xmpp.has<jsonxx::Boolean>("host"))
+      {
+        settings.host = xmpp.get<jsonxx::Boolean>("host");
+      }
+
+      if (!XMPP::Open(settings))
+      {
+        printf("XMPP::Open() failed, continuing anyway...\n");
+        //return -1;
+      }
+      else if (!settings.host)
+      {
+        XMPP::SendMessage(XMPP::Message::StartSession);
+        // TODO: wait for the initial state to have been received.
+      }
+    }
   }
 
   std::map<std::string,Renderer::Texture*> textures;
@@ -531,6 +566,7 @@ int main(int argc, const char *argv[])
 
   delete surface;
 
+  XMPP::Close();
   MIDI::Close();
   FFT::Close();
 
