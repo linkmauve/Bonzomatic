@@ -1,4 +1,5 @@
 #include "XMPP.h"
+#include "SXE.h"
 
 #include <gloox/client.h>
 #include <gloox/connectionlistener.h>
@@ -6,6 +7,7 @@
 #include <gloox/gloox.h>
 #include <gloox/loghandler.h>
 #include <gloox/message.h>
+#include <gloox/messagesessionhandler.h>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -14,8 +16,33 @@
 
 using namespace gloox;
 
+class SxeHandler : public MessageSessionHandler
+{
+private:
+  //ClientBase* parent;
+  // TODO: allow more than one concurrent session.
+  std::unique_ptr<MessageSession> session = nullptr;
+
+public:
+  bool setMessageSession(MessageSession* new_session)
+  {
+    if (session)
+      return false;
+
+    session.reset(new_session);
+    printf("[33;1m[XMPP] Session with %s started[0m\n", session->target().full().c_str());
+    return true;
+  }
+
+  void handleMessageSession(MessageSession* session) override
+  {
+    setMessageSession(session);
+  }
+};
+
 class Bot : ConnectionListener,
-            LogHandler
+            LogHandler,
+            SxeHandler
 {
 private:
   std::unique_ptr<Client> client;
@@ -33,6 +60,7 @@ public:
     client->logInstance().registerLogHandler(LogLevelDebug,
                                              LogAreaXmlOutgoing | LogAreaXmlIncoming,
                                              this);
+    client->registerMessageSessionHandler(this);
   }
 
   bool connect()
@@ -59,8 +87,18 @@ public:
 
   void startSession(JID jid)
   {
-    Message msg(Message::Chat, jid, "Coucou !");
-    client->send(msg);
+    MessageSession* session = new MessageSession(client.get(), jid);
+    if (!setMessageSession(session))
+      return;
+
+    Sxe sxe;
+    sxe.id = "e";
+    sxe.session = "851ba2";
+    sxe.type = SxeType::Connect;
+    StanzaExtensionList extensions;
+    extensions.push_back(&sxe);
+
+    session->send("", "", extensions);
   }
 
 private:
