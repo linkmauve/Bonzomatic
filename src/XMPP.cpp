@@ -12,24 +12,26 @@
 #include <string>
 #include <thread>
 
-class Bot : gloox::ConnectionListener,
-            gloox::LogHandler
+using namespace gloox;
+
+class Bot : ConnectionListener,
+            LogHandler
 {
 private:
-  std::unique_ptr<gloox::Client> client;
+  std::unique_ptr<Client> client;
   bool connected = false;
 
 public:
-  Bot(gloox::JID jid, std::string password)
+  Bot(JID jid, std::string password)
   {
-    client = std::make_unique<gloox::Client>(jid, password);
-    client->setSASLMechanisms(gloox::SaslMechPlain);
+    client = std::make_unique<Client>(jid, password);
+    client->setSASLMechanisms(SaslMechPlain);
     client->setXmlLang("fr");
     client->disco()->setVersion("Bonzomatic", "1.0");
     client->disco()->setIdentity("client", "pc");
     client->registerConnectionListener(this);
-    client->logInstance().registerLogHandler(gloox::LogLevelDebug,
-                                             gloox::LogAreaXmlOutgoing | gloox::LogAreaXmlIncoming,
+    client->logInstance().registerLogHandler(LogLevelDebug,
+                                             LogAreaXmlOutgoing | LogAreaXmlIncoming,
                                              this);
   }
 
@@ -49,21 +51,21 @@ public:
     return connected;
   }
 
-  gloox::ConnectionError recv()
+  ConnectionError recv()
   {
     // Timeout every 16ms.
     return client->recv(16667);
   }
 
-  void startSession(gloox::JID jid)
+  void startSession(JID jid)
   {
-    gloox::Message msg(gloox::Message::Chat, jid, "Coucou !");
+    Message msg(Message::Chat, jid, "Coucou !");
     client->send(msg);
   }
 
 private:
 
-  // For gloox::ConnectionListener.
+  // For ConnectionListener.
 
   void onConnect() override
   {
@@ -71,35 +73,35 @@ private:
     connected = true;
   }
 
-  void onDisconnect(gloox::ConnectionError e) override
+  void onDisconnect(ConnectionError e) override
   {
     printf("[XMPP] Disconnected\n");
     connected = false;
   }
 
-  bool onTLSConnect(const gloox::CertInfo& info) override
+  bool onTLSConnect(const CertInfo& info) override
   {
     printf("[XMPP] Connected with TLS\n");
     connected = false;
     return true;
   }
 
-  // For gloox::LogHandler.
+  // For LogHandler.
 
-  void handleLog(gloox::LogLevel level, gloox::LogArea area, const std::string& message) override
+  void handleLog(LogLevel level, LogArea area, const std::string& message) override
   {
     const char* level_str;
     const char* area_str;
-    if (level == gloox::LogLevelDebug) {
+    if (level == LogLevelDebug) {
       level_str = "debug";
-    } else if (level == gloox::LogLevelWarning) {
+    } else if (level == LogLevelWarning) {
       level_str = "warn";
-    } else if (level == gloox::LogLevelError) {
+    } else if (level == LogLevelError) {
       level_str = "error";
     }
-    if (area == gloox::LogAreaXmlOutgoing) {
+    if (area == LogAreaXmlOutgoing) {
       area_str = "-->";
-    } else if (area == gloox::LogAreaXmlIncoming) {
+    } else if (area == LogAreaXmlIncoming) {
       area_str = "<--";
     }
     printf("[XMPP] [%s] %s %s\n", level_str, area_str, message.c_str());
@@ -118,8 +120,8 @@ bool XMPP::Open(XMPP::Settings& settings)
     bot.connect();
     while (true)
     {
-      gloox::ConnectionError err = bot.recv();
-      if (err != gloox::ConnNoError)
+      ConnectionError err = bot.recv();
+      if (err != ConnNoError)
         break;
 
       // Only read the queue if we are connected.
@@ -136,7 +138,7 @@ bool XMPP::Open(XMPP::Settings& settings)
         }
         else if (msg == Message::StartSession)
         {
-          bot.startSession(gloox::JID(settings.recipient));
+          bot.startSession(JID(settings.recipient));
         }
         queue.pop();
       }
